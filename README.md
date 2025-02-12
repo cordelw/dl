@@ -1,2 +1,1 @@
-# Dynamic List
-### C dynamic array library
+# C Dynamic Buffer
