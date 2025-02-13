@@ -27,19 +27,19 @@ const char * dbGetErrorString(DBError s)
     }
 }
 
-DynamicBuffer *internal_dbNew(
+DynamicBuf *internal_dbNew(
     const unsigned int starting_cap,
-    const unsigned int data_size)
+    const unsigned int stride)
 {
     if (starting_cap == 0)
         return NULL;
 
-    DynamicBuffer *db = malloc(sizeof(DynamicBuffer));
+    DynamicBuf *db = malloc(sizeof(DynamicBuf));
     if (!db) return NULL;
 
     db->capacity = starting_cap;
-    db->data_size = data_size;
-    db->data_buffer = malloc(starting_cap * data_size);
+    db->stride = stride;
+    db->data_buffer = malloc(starting_cap * stride);
     if (!db->data_buffer)
     {
         free(db);
@@ -49,7 +49,7 @@ DynamicBuffer *internal_dbNew(
     return db;
 }
 
-void dbFree(DynamicBuffer *db)
+void dbFree(DynamicBuf *db)
 {
     if (db == NULL) return;
 
@@ -57,42 +57,42 @@ void dbFree(DynamicBuffer *db)
     free(db);
 }
 
-const void * dbFirst(const DynamicBuffer *db)
+const void * dbFirst(const DynamicBuf *db)
 {
     return db->data_buffer;
 }
 
-const void * dbLast(const DynamicBuffer *db)
+const void * dbLast(const DynamicBuf *db)
 {
-    return db->data_buffer + (db->data_size * (db->count - 1));
+    return db->data_buffer + (db->stride * (db->count - 1));
 }
 
 // Read
 const void * internal_dbGet(
-    const DynamicBuffer *db,
+    const DynamicBuf *db,
     const unsigned int  index)
 {
     if (!db) return NULL;
     if (!db->data_buffer) return NULL;
     if (index >= db->capacity) return NULL;
 
-    return db->data_buffer + (db->data_size * index);
+    return db->data_buffer + (db->stride * index);
 }
 
 // Write
 //
 
-DBError dbClear(DynamicBuffer *db)
+DBError dbClear(DynamicBuf *db)
 {
     if (!db) return dbErrorNullBufferObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
 
-    memset(db->data_buffer, 0, db->capacity * db->data_size);
+    memset(db->data_buffer, 0, db->capacity * db->stride);
     db->count = 0;
     return dbErrorOk;
 }
 
-DBError dbResize(DynamicBuffer *db, const float factor)
+DBError dbResize(DynamicBuf *db, const float factor)
 {
     if (!db) return dbErrorNullBufferObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
@@ -100,7 +100,7 @@ DBError dbResize(DynamicBuffer *db, const float factor)
         return dbErrorInvalidResizeFactor;
 
     db->capacity *= factor;
-    char *tmp = realloc(db->data_buffer, db->capacity * db->data_size);
+    char *tmp = realloc(db->data_buffer, db->capacity * db->stride);
     if (tmp == NULL)
         return dbErrorOutOfMemory;
 
@@ -108,7 +108,7 @@ DBError dbResize(DynamicBuffer *db, const float factor)
     return dbErrorOk;
 }
 
-DBError dbShrinkToFit(DynamicBuffer *db)
+DBError dbShrinkToFit(DynamicBuf *db)
 {
     if (!db) return dbErrorNullBufferObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
@@ -117,21 +117,21 @@ DBError dbShrinkToFit(DynamicBuffer *db)
     if (db->count == db->capacity)
         return dbErrorOk;
 
-    int new_buf_size = db->data_size * db->count;
+    int new_buf_size = db->stride * db->count;
     if (new_buf_size == 0)
-        new_buf_size = db->data_size;
+        return dbErrorOk;
 
     void *t = realloc(db->data_buffer, new_buf_size);
     if (!t)
         return -1;
 
     db->data_buffer = t;
-    db->capacity = new_buf_size / db->data_size;
+    db->capacity = new_buf_size / db->stride;
     return dbErrorOk;
 }
 
 DBError dbSet(
-    DynamicBuffer *db,
+    DynamicBuf *db,
     const unsigned int index,
     const void *element)
 {
@@ -141,8 +141,8 @@ DBError dbSet(
     if (index >= db->capacity)
         return dbErrorIndexOutOfBounds;
 
-    char *dest = db->data_buffer + (db->data_size * index);
-    memcpy(dest, element, db->data_size);
+    char *dest = db->data_buffer + (db->stride * index);
+    memcpy(dest, element, db->stride);
 
     if (index == db->count)
         db->count++;
@@ -153,7 +153,7 @@ DBError dbSet(
 }
 
 DBError dbPush(
-    DynamicBuffer *db,
+    DynamicBuf *db,
     const void      *element)
 {
     if (!db) return dbErrorNullBufferObject;
@@ -163,20 +163,20 @@ DBError dbPush(
     if (db->count >= db->capacity)
         dbResize(db, 1.6);
 
-    char *dest = db->data_buffer + (db->data_size * db->count);
+    char *dest = db->data_buffer + (db->stride * db->count);
 
-    memcpy(dest, element, db->data_size);
+    memcpy(dest, element, db->stride);
     db->count++;
     return dbErrorOk;
 }
 
-void shrinkIfOK(DynamicBuffer *db)
+void shrinkIfOK(DynamicBuf *db)
 {
     if ((db->capacity - db->count) >= db-> count * 5)
         dbShrinkToFit(db);
 }
 
-DBError dbPop(DynamicBuffer *db)
+DBError dbPop(DynamicBuf *db)
 {
     if (!db) return dbErrorNullBufferObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
@@ -184,9 +184,9 @@ DBError dbPop(DynamicBuffer *db)
     if (db->count == 0)
         return dbErrorOk;
 
-    char *dest = db->data_buffer + (db->data_size * (db->count - 1));
+    char *dest = db->data_buffer + (db->stride * (db->count - 1));
 
-    memset(dest, 0, db->data_size);
+    memset(dest, 0, db->stride);
     db->count--;
 
     shrinkIfOK(db);
@@ -194,7 +194,7 @@ DBError dbPop(DynamicBuffer *db)
 }
 
 DBError dbRemoveOrdered(
-    DynamicBuffer    *db,
+    DynamicBuf    *db,
     const unsigned int index)
 {
     if (!db) return dbErrorNullBufferObject;
@@ -211,10 +211,10 @@ DBError dbRemoveOrdered(
 
     // Move all memory after index "left" one space;
     char *dest = dbGet(db, char, index);
-    const unsigned int size = (db->count - index - 1) * db->data_size;
+    const unsigned int size = (db->count - index - 1) * db->stride;
 
-    memmove(dest, dest + db->data_size, size);
-    memset((void *)dbLast(db), 0, db->data_size);
+    memmove(dest, dest + db->stride, size);
+    memset((void *)dbLast(db), 0, db->stride);
     db->count--;
 
     shrinkIfOK(db);
@@ -222,7 +222,7 @@ DBError dbRemoveOrdered(
 }
 
 DBError dbRemoveUnordered(
-    DynamicBuffer    *db,
+    DynamicBuf    *db,
     const unsigned int index)
 {
     if (!db) return dbErrorNullBufferObject;
@@ -238,11 +238,11 @@ DBError dbRemoveUnordered(
     }
 
     // Copy last element to given index and remove duplicate
-    char *dest = db->data_buffer + (index * db->data_size);
+    char *dest = db->data_buffer + (index * db->stride);
     char *last = (char*)dbLast(db);
 
-    memcpy(dest, last, db->data_size);
-    memset(last, 0, db->data_size);
+    memcpy(dest, last, db->stride);
+    memset(last, 0, db->stride);
     db->count--;
 
     shrinkIfOK(db);
@@ -252,20 +252,20 @@ DBError dbRemoveUnordered(
 // Traversal
 //
 
-DBError dbResetIterator(DynamicBuffer *db)
+DBError dbResetIterator(DynamicBuf *db)
 {
     if (!db) return dbErrorNullBufferObject;
     db->iterator = 0;
     return dbErrorOk;
 }
 
-int dbHasNext(const DynamicBuffer *db)
+int dbHasNext(const DynamicBuf *db)
 {
     if (!db) return 0;
     return db->iterator < db->count;
 }
 
-const void * internal_dbNext(DynamicBuffer *db)
+const void * internal_dbNext(DynamicBuf *db)
 {
     if (!dbHasNext(db)) return NULL;
 
