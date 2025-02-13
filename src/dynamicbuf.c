@@ -1,4 +1,4 @@
-#include "db.h"
+#include "dynamicbuf.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -100,6 +100,9 @@ DBError dbResize(DynamicBuf *db, const float factor)
         return dbErrorInvalidResizeFactor;
 
     db->capacity *= factor;
+    if (db->capacity == 1) // If lists start with a capacity of 1, it cannot be multiplied by factor
+        db->capacity = 2;
+
     char *tmp = realloc(db->data_buffer, db->capacity * db->stride);
     if (tmp == NULL)
         return dbErrorOutOfMemory;
