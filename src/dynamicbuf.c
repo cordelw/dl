@@ -29,15 +29,21 @@ const char * dbGetErrorString(DBError s)
 
 DynamicBuf *internal_dbNew(
     const unsigned int starting_cap,
-    const unsigned int stride)
+    const unsigned int stride,
+    const float resize_factor)
 {
-    if (starting_cap == 0)
+    if (stride == 0)
+        return NULL;
+    if (resize_factor < 1)
         return NULL;
 
     DynamicBuf *db = malloc(sizeof(DynamicBuf));
     if (!db) return NULL;
 
     db->capacity = starting_cap;
+    if (db->capacity == 0)
+        db->capacity = 1;
+
     db->stride = stride;
     db->data_buffer = malloc(starting_cap * stride);
     if (!db->data_buffer)
@@ -92,14 +98,29 @@ DBError dbClear(DynamicBuf *db)
     return dbErrorOk;
 }
 
-DBError dbResize(DynamicBuf *db, const float factor)
+DBError dbChangeResizeFactor(
+    DynamicBuf *db,
+    float factor)
+{
+    if (!db) return dbErrorNullBufferObject;
+    if (factor < 1) return dbErrorInvalidResizeFactor;
+
+    db->resize_factor = factor;
+    return dbErrorOk;
+}
+
+DBError dbResize(DynamicBuf *db)
 {
     if (!db) return dbErrorNullBufferObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
-    if (factor <= 0)
+    if (db->resize_factor < 1)
         return dbErrorInvalidResizeFactor;
 
-    db->capacity *= factor;
+    if (db->resize_factor > 1)
+        db->capacity *= db->resize_factor;
+    else
+        db->capacity += 1;
+
     if (db->capacity == 1) // If lists start with a capacity of 1, it cannot be multiplied by factor
         db->capacity = 2;
 
@@ -164,7 +185,7 @@ DBError dbPush(
     if (!element) return dbErrorNullArgument;
 
     if (db->count >= db->capacity)
-        dbResize(db, 1.6);
+        dbResize(db);
 
     char *dest = db->data_buffer + (db->stride * db->count);
 

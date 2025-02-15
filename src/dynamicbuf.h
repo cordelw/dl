@@ -2,6 +2,8 @@
 #define DYNAMIC_BUF_H
 
 // TODO: Fix documentation
+// TODO: Implement find functionality
+// TODO: Implement Push range
 
 typedef enum {
     dbErrorOk,
@@ -23,13 +25,15 @@ typedef struct {
     unsigned int count;
     unsigned int capacity;
     unsigned int iterator;
+    float resize_factor;
 } DynamicBuf;
 
 /* Creates a dynamic list with given initial capacity and element size.
  * Returns NULL if allocation fails. */
 DynamicBuf * internal_dbNew(
     const unsigned int initial_capacity,
-    const unsigned int stride);
+    const unsigned int stride,
+    const float resize_factor);
 
 /* Typesafe constructor macro */
 #define dbNew(T, initial_capacity) \
@@ -58,10 +62,16 @@ const void * internal_dbGet(
  * the count to 0; Capacity remains untouched.*/
 DBError dbClear(DynamicBuf *db);
 
+/* Sets a dynamic buffer's resize factor
+ * Error when factor is invalid (<1) */
+DBError dbChangeResizeFactor(
+    DynamicBuf *db,
+    float factor);
+
 /* Resizes a dynamic list's data buffer by the given resize factor.
  * Returns an error if factor is less or equal to zero.
  * Returns an error if no additional memory can be allocated. */
-DBError dbResize(DynamicBuf *db, const float factor);
+DBError dbResize(DynamicBuf *db);
 
 /* Reallocates the lists data buffer to fit only the counted
  * items */
@@ -71,9 +81,13 @@ DBError dbShrinkToFit(DynamicBuf *db);
  * Index can be within the lists capacity, and will adjust the
  * count accordingly. */
 DBError dbSet(
-    DynamicBuf      *db,
+    DynamicBuf         *db,
     const unsigned int index,
     const void         *data);
+
+/* Sets the given type of given literal data at given index */
+#define dbSetLiteral(db, i, T, data) \
+    dbSet(db, i, &((T){data}))
 
 /* Pushes the given element to the next available spot
  * Returns an error if dbResize() fails. */
@@ -90,12 +104,12 @@ DBError dbPop(DynamicBuf *db);
 
 /* Removes an element from list without maintaining order. */
 DBError dbRemoveUnordered(
-    DynamicBuf    *db,
+    DynamicBuf         *db,
     const unsigned int index);
 
 /* Removes an element from list in while maintaining order. */
 DBError dbRemoveOrdered(
-    DynamicBuf    *db,
+    DynamicBuf         *db,
     const unsigned int index);
 
 /* Resets iterator to 0 */
