@@ -37,7 +37,11 @@ DynamicBuf * internal_dbNew(
 
 /* Typesafe constructor macro */
 #define dbNew(T, initial_capacity) \
-    internal_dbNew(initial_capacity, sizeof(T))
+    internal_dbNew(initial_capacity, sizeof(T), 1.6)
+
+/* Typesafe constructor macro with resize factor */
+#define dbNewWithResize(T, initial_capacity, resize_factor) \
+    internal_dbNew(initial_capacity, sizeof(T), resize_factor)
 
 /* Frees all of a lists associated memory */
 void dbFree(DynamicBuf *db);

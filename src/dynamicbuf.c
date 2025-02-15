@@ -45,6 +45,7 @@ DynamicBuf *internal_dbNew(
         db->capacity = 1;
 
     db->stride = stride;
+    db->resize_factor = resize_factor;
     db->data_buffer = malloc(starting_cap * stride);
     if (!db->data_buffer)
     {
