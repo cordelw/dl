@@ -1,8 +1,7 @@
 #ifndef DYNAMIC_BUF_H
 #define DYNAMIC_BUF_H
 
-// TODO: Implement find functionality
-// TODO: Implement Push range maybe
+// TODO: Implement find functionality maybe
 
 // ///// //
 // ERROR //
@@ -29,12 +28,12 @@ const char * dbGetErrorString(
 // END ERROR
 
 typedef struct {
-    char *data_buffer;
-    unsigned int stride;
-    unsigned int count;
-    unsigned int capacity;
-    unsigned int iterator;
-    float resize_factor;
+    char   *data_buffer;
+    size_t stride;
+    size_t count;
+    size_t capacity;
+    size_t iterator;
+    float  resize_factor;
 } DynamicBuf;
 
 // ////////////////////// //
@@ -46,8 +45,8 @@ typedef struct {
  * Returns NULL if allocation fails.
  */
 DynamicBuf * dbNewFromSize(
-    const unsigned int initial_capacity,
-    const unsigned int element_size,
+    const size_t initial_capacity,
+    const size_t element_size,
     const float resize_factor);
 
 /**
@@ -65,7 +64,8 @@ DynamicBuf * dbNewFromSize(
 /**
  * Frees all of a lists allocated memory
  */
-void dbFree(DynamicBuf *db);
+void dbFree(
+    DynamicBuf *db);
 
 // END CONSTRUCTOR/DESTRUCTOR
 
@@ -84,8 +84,8 @@ void dbFree(DynamicBuf *db);
  * Returns a pointer to the address of the given item's index
  */
 const void * dbGetUntyped(
-    const DynamicBuf    *db,
-    const unsigned int index);
+    const DynamicBuf *db,
+    const size_t     index);
 
 /**
  * Typed get macro that retrieves an item from a buffer at the
@@ -119,20 +119,22 @@ DBError dbClear(
  */
 DBError dbChangeResizeFactor(
     DynamicBuf *db,
-    float factor);
+    float      factor);
 
 /**
  * Resizes a dynamic list's data buffer by the given resize factor.
  * Returns an error if factor is less or equal to zero.
  * Returns an error if no additional memory can be allocated.
  */
-DBError dbResize(DynamicBuf *db);
+DBError dbResize(
+    DynamicBuf *db);
 
 /**
  * Reallocates the lists data buffer to fit only the counted
  * items
  */
-DBError dbShrinkToFit(DynamicBuf *db);
+DBError dbShrinkToFit(
+    DynamicBuf *db);
 
 /**
  * Sets the value of data at the given element index
@@ -140,9 +142,9 @@ DBError dbShrinkToFit(DynamicBuf *db);
  * count accordingly.
  */
 DBError dbSet(
-    DynamicBuf         *db,
-    const unsigned int index,
-    const void         *data);
+    DynamicBuf   *db,
+    const size_t index,
+    const void   *data);
 
 /**
  * Sets the given type of given literal data at given index
@@ -163,8 +165,6 @@ DBError dbPush(
  */
 #define dbPushLiteral(db, T, data) \
     dbPush(db, &((T){data}))
-#define dbPushLiterals(db, T, n, data) \
-    dbPushRange(db, n, &((T){data}))
 
 /**
  * Pushes the given number of given elements to the next
@@ -172,9 +172,9 @@ DBError dbPush(
  * Returns an error if dbResize() fails.
  */
 DBError dbPushRange(
-    DynamicBuf         *db,
-    const unsigned int n,
-    const void         *element_data);
+    DynamicBuf   *db,
+    const size_t n,
+    const void   *element_data);
 
 /**
  * Removes the last element from a list.
@@ -186,15 +186,15 @@ DBError dbPop(
  * Removes an element from list without maintaining order.
  */
 DBError dbRemoveUnordered(
-    DynamicBuf         *db,
-    const unsigned int index);
+    DynamicBuf   *db,
+    const size_t index);
 
 /**
  * Removes an element from list in while maintaining order.
  */
 DBError dbRemoveOrdered(
-    DynamicBuf         *db,
-    const unsigned int index);
+    DynamicBuf   *db,
+    const size_t index);
 
 // END WRITE
 

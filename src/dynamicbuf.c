@@ -38,8 +38,8 @@ const char * dbGetErrorString(DBError s)
 // ////////////////////// //
 
 DynamicBuf *dbNewFromSize(
-    const unsigned int starting_cap,
-    const unsigned int stride,
+    const size_t starting_cap,
+    const size_t stride,
     const float resize_factor)
 {
     if (stride == 0)
@@ -56,6 +56,8 @@ DynamicBuf *dbNewFromSize(
 
     db->stride = stride;
     db->resize_factor = resize_factor;
+    db->count = 0;
+    db->iterator = 0;
     db->data_buffer = malloc(starting_cap * stride);
     if (!db->data_buffer)
     {
@@ -82,11 +84,11 @@ void dbFree(DynamicBuf *db)
 
 const void * dbGetUntyped(
     const DynamicBuf *db,
-    const unsigned int  index)
+    const size_t  index)
 {
     if (!db) return NULL;
     if (!db->data_buffer) return NULL;
-    if (index >= db->capacity) return NULL;
+    if (index >= db->count) return NULL;
 
     return db->data_buffer + (db->stride * index);
 }
@@ -94,7 +96,7 @@ const void * dbGetUntyped(
 // END READ
 
 // ///// //
-// write //
+// WRITE //
 // ///// //
 
 DBError dbClear(DynamicBuf *db)
@@ -165,13 +167,13 @@ DBError dbShrinkToFit(DynamicBuf *db)
 
 DBError dbSet(
     DynamicBuf *db,
-    const unsigned int index,
+    const size_t index,
     const void *element)
 {
     if (!db) return dbErrorNullParentObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
     if (!element) return dbErrorNullArgument;
-    if (index >= db->capacity)
+    if (index >= db->count)
         return dbErrorIndexOutOfBounds;
 
     char *dest = db->data_buffer + (db->stride * index);
@@ -206,12 +208,13 @@ DBError dbPush(
 
 DBError dbPushRange(
     DynamicBuf         *db,
-    const unsigned int n,
+    const size_t n,
     const void         *element_data)
 {
     if (!db) return dbErrorNullParentObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
     if (!element_data) return dbErrorNullArgument;
+    if (n == 0) return dbErrorOk;
 
     while (db->count+n-1 >= db->capacity)
         dbResize(db);
@@ -247,7 +250,7 @@ DBError dbPop(DynamicBuf *db)
 
 DBError dbRemoveOrdered(
     DynamicBuf    *db,
-    const unsigned int index)
+    const size_t index)
 {
     if (!db) return dbErrorNullParentObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
@@ -263,7 +266,7 @@ DBError dbRemoveOrdered(
 
     // Move all memory after index "left" one space;
     char *dest = dbGet(db, char, index);
-    const unsigned int size = (db->count - index - 1) * db->stride;
+    const size_t size = (db->count - index - 1) * db->stride;
 
     memmove(dest, dest + db->stride, size);
     memset((void *)dbLast(db), 0, db->stride);
@@ -275,7 +278,7 @@ DBError dbRemoveOrdered(
 
 DBError dbRemoveUnordered(
     DynamicBuf    *db,
-    const unsigned int index)
+    const size_t index)
 {
     if (!db) return dbErrorNullParentObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
