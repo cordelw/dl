@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+// ///// //
+// ERROR //
+// ///// //
+
 const char * dbGetErrorString(DBError s)
 {
     switch (s)
@@ -27,7 +31,13 @@ const char * dbGetErrorString(DBError s)
     }
 }
 
-DynamicBuf *internal_dbNew(
+// END ERROR
+
+// ////////////////////// //
+// CONSTRUCTOR/DESTRUCTOR //
+// ////////////////////// //
+
+DynamicBuf *dbNewFromSize(
     const unsigned int starting_cap,
     const unsigned int stride,
     const float resize_factor)
@@ -64,8 +74,13 @@ void dbFree(DynamicBuf *db)
     free(db);
 }
 
-// Read
-const void * internal_dbGet(
+// END CONSTRUCTOR/DESTRUCTOR
+
+// //// //
+// READ //
+// //// //
+
+const void * dbGetUntyped(
     const DynamicBuf *db,
     const unsigned int  index)
 {
@@ -76,8 +91,11 @@ const void * internal_dbGet(
     return db->data_buffer + (db->stride * index);
 }
 
-// Write
-//
+// END READ
+
+// ///// //
+// write //
+// ///// //
 
 DBError dbClear(DynamicBuf *db)
 {
@@ -169,19 +187,38 @@ DBError dbSet(
 
 DBError dbPush(
     DynamicBuf *db,
-    const void      *element)
+    const void *element_data)
 {
     if (!db) return dbErrorNullParentObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
-    if (!element) return dbErrorNullArgument;
+    if (!element_data) return dbErrorNullArgument;
 
     if (db->count >= db->capacity)
         dbResize(db);
 
-    char *dest = db->data_buffer + (db->stride * db->count);
+    //char *dest = db->data_buffer + (db->stride * db->count);
+    char *dest = dbFirstFree(db);
 
-    memcpy(dest, element, db->stride);
+    memcpy(dest, element_data, db->stride);
     db->count++;
+    return dbErrorOk;
+}
+
+DBError dbPushRange(
+    DynamicBuf         *db,
+    const unsigned int n,
+    const void         *element_data)
+{
+    if (!db) return dbErrorNullParentObject;
+    if (!db->data_buffer) return dbErrorNullBufferData;
+    if (!element_data) return dbErrorNullArgument;
+
+    while (db->count+n-1 >= db->capacity)
+        dbResize(db);
+
+    char *dest = dbFirstFree(db);
+    memcpy(dest, element_data, db->stride * n);
+    db->count += n;
     return dbErrorOk;
 }
 
@@ -264,8 +301,11 @@ DBError dbRemoveUnordered(
     return dbErrorOk;
 }
 
-// Traversal
-//
+// END WRITE
+
+// ///////// //
+// Traversal //
+// ///////// //
 
 DBError dbResetIterator(DynamicBuf *db)
 {
@@ -280,7 +320,7 @@ int dbHasNext(const DynamicBuf *db)
     return db->iterator < db->count;
 }
 
-const void * internal_dbNext(DynamicBuf *db)
+const void * dbNextUntyped(DynamicBuf *db)
 {
     if (!dbHasNext(db)) return NULL;
 
@@ -288,3 +328,5 @@ const void * internal_dbNext(DynamicBuf *db)
     db->iterator++;
     return element;
 }
+
+// END TRAVERSAL

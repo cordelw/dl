@@ -1,10 +1,14 @@
 #ifndef DYNAMIC_BUF_H
 #define DYNAMIC_BUF_H
 
-// TODO: Fix documentation ?
 // TODO: Implement find functionality
 // TODO: Implement Push range maybe
 
+// ///// //
+// ERROR //
+// ///// //
+
+#include <sys/types.h>
 typedef enum {
     dbErrorOk,
     dbErrorNullParentObject,
@@ -19,7 +23,10 @@ typedef enum {
 /**
  * Returns a string describing the given error status
  */
-const char * dbGetErrorString(DBError s);
+const char * dbGetErrorString(
+    DBError s);
+
+// END ERROR
 
 typedef struct {
     char *data_buffer;
@@ -29,6 +36,10 @@ typedef struct {
     unsigned int iterator;
     float resize_factor;
 } DynamicBuf;
+
+// ////////////////////// //
+// CONSTRUCTOR/DESTRUCTOR //
+// ////////////////////// //
 
 /**
  * Creates a dynamic list with given initial capacity and element size.
@@ -56,11 +67,18 @@ DynamicBuf * dbNewFromSize(
  */
 void dbFree(DynamicBuf *db);
 
+// END CONSTRUCTOR/DESTRUCTOR
+
+// //// //
+// READ //
+// //// //
+
 /**
  * Macros that evaluate to a buffer's first and last elements
  */
 #define dbFirst(db) (db->data_buffer)
 #define dbLast(db) (db->data_buffer + (db->stride * (db->count - 1)))
+#define dbFirstFree(db) (db->data_buffer + (db->stride * (db->count)))
 
 /**
  * Returns a pointer to the address of the given item's index
@@ -82,11 +100,18 @@ const void * dbGetUntyped(
 #define dbAt(db, T, index) \
     ((T *) {dbGet(db, T, index)})
 
+// END READ
+
+// ///// //
+// write //
+// ///// //
+
 /**
  * Clears the memory in a dynamic lists data buffer and sets
  * the count to 0; Capacity remains untouched.
  */
-DBError dbClear(DynamicBuf *db);
+DBError dbClear(
+    DynamicBuf *db);
 
 /**
  * Sets a dynamic buffer's resize factor.
@@ -131,18 +156,31 @@ DBError dbSet(
  */
 DBError dbPush(
     DynamicBuf *db,
-    const void *data);
+    const void *element_data);
 
 /**
  * Pushes the given literal data to nex available spot
  */
 #define dbPushLiteral(db, T, data) \
     dbPush(db, &((T){data}))
+#define dbPushLiterals(db, T, n, data) \
+    dbPushRange(db, n, &((T){data}))
+
+/**
+ * Pushes the given number of given elements to the next
+ * available location in the buffer.
+ * Returns an error if dbResize() fails.
+ */
+DBError dbPushRange(
+    DynamicBuf         *db,
+    const unsigned int n,
+    const void         *element_data);
 
 /**
  * Removes the last element from a list.
  */
-DBError dbPop(DynamicBuf *db);
+DBError dbPop(
+    DynamicBuf *db);
 
 /**
  * Removes an element from list without maintaining order.
@@ -158,20 +196,29 @@ DBError dbRemoveOrdered(
     DynamicBuf         *db,
     const unsigned int index);
 
+// END WRITE
+
+// ///////// //
+// ITERATION //
+// ///////// //
+
 /**
  * Resets iterator to 0
  */
-DBError dbResetIterator(DynamicBuf *db);
+DBError dbResetIterator(
+    DynamicBuf *db);
 
 /**
  * Returns 1 if next element exists, 0 otherwise
  */
-int dbHasNext(const DynamicBuf *db);
+int dbHasNext(
+    const DynamicBuf *db);
 
 /**
  * Gets pointer to the next element in iteration
  */
-const void * dbNextUntyped(DynamicBuf *db);
+const void * dbNextUntyped(
+    DynamicBuf *db);
 
 /**
  * Typesafe Next() macro
@@ -179,5 +226,7 @@ const void * dbNextUntyped(DynamicBuf *db);
  */
 #define dbNext(db, T) \
     (T *) dbNextUntyped(db)
+
+// END ITERATION
 
 #endif
