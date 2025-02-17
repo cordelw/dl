@@ -64,16 +64,6 @@ void dbFree(DynamicBuf *db)
     free(db);
 }
 
-const void * dbFirst(const DynamicBuf *db)
-{
-    return db->data_buffer;
-}
-
-const void * dbLast(const DynamicBuf *db)
-{
-    return db->data_buffer + (db->stride * (db->count - 1));
-}
-
 // Read
 const void * internal_dbGet(
     const DynamicBuf *db,
