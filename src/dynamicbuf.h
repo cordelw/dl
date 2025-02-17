@@ -1,13 +1,13 @@
 #ifndef DYNAMIC_BUF_H
 #define DYNAMIC_BUF_H
 
-// TODO: Fix documentation
+// TODO: Fix documentation ?
 // TODO: Implement find functionality
-// TODO: Implement Push range
+// TODO: Implement Push range maybe
 
 typedef enum {
     dbErrorOk,
-    dbErrorNullBufferObject,
+    dbErrorNullParentObject,
     dbErrorNullBufferData,
     dbErrorNullArgument,
     dbErrorOutOfMemory,

@@ -8,7 +8,7 @@ const char * dbGetErrorString(DBError s)
     {
         case dbErrorOk:
             return "Success.";
-        case dbErrorNullBufferObject:
+        case dbErrorNullParentObject:
             return "Dynamic list pointer is NULL.";
         case dbErrorNullBufferData:
             return "Dynamic list's data_buffer buffer pointer is NULL.";
@@ -91,7 +91,7 @@ const void * internal_dbGet(
 
 DBError dbClear(DynamicBuf *db)
 {
-    if (!db) return dbErrorNullBufferObject;
+    if (!db) return dbErrorNullParentObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
 
     memset(db->data_buffer, 0, db->capacity * db->stride);
@@ -103,7 +103,7 @@ DBError dbChangeResizeFactor(
     DynamicBuf *db,
     float factor)
 {
-    if (!db) return dbErrorNullBufferObject;
+    if (!db) return dbErrorNullParentObject;
     if (factor < 1) return dbErrorInvalidResizeFactor;
 
     db->resize_factor = factor;
@@ -112,7 +112,7 @@ DBError dbChangeResizeFactor(
 
 DBError dbResize(DynamicBuf *db)
 {
-    if (!db) return dbErrorNullBufferObject;
+    if (!db) return dbErrorNullParentObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
     if (db->resize_factor < 1)
         return dbErrorInvalidResizeFactor;
@@ -135,7 +135,7 @@ DBError dbResize(DynamicBuf *db)
 
 DBError dbShrinkToFit(DynamicBuf *db)
 {
-    if (!db) return dbErrorNullBufferObject;
+    if (!db) return dbErrorNullParentObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
 
     // Already shrunk bail
@@ -160,7 +160,7 @@ DBError dbSet(
     const unsigned int index,
     const void *element)
 {
-    if (!db) return dbErrorNullBufferObject;
+    if (!db) return dbErrorNullParentObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
     if (!element) return dbErrorNullArgument;
     if (index >= db->capacity)
@@ -181,7 +181,7 @@ DBError dbPush(
     DynamicBuf *db,
     const void      *element)
 {
-    if (!db) return dbErrorNullBufferObject;
+    if (!db) return dbErrorNullParentObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
     if (!element) return dbErrorNullArgument;
 
@@ -203,7 +203,7 @@ void shrinkIfOK(DynamicBuf *db)
 
 DBError dbPop(DynamicBuf *db)
 {
-    if (!db) return dbErrorNullBufferObject;
+    if (!db) return dbErrorNullParentObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
 
     if (db->count == 0)
@@ -222,7 +222,7 @@ DBError dbRemoveOrdered(
     DynamicBuf    *db,
     const unsigned int index)
 {
-    if (!db) return dbErrorNullBufferObject;
+    if (!db) return dbErrorNullParentObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
     if (index >= db->count)
         return dbErrorIndexOutOfBounds;
@@ -250,7 +250,7 @@ DBError dbRemoveUnordered(
     DynamicBuf    *db,
     const unsigned int index)
 {
-    if (!db) return dbErrorNullBufferObject;
+    if (!db) return dbErrorNullParentObject;
     if (!db->data_buffer) return dbErrorNullBufferData;
     if (index >= db->count)
         return dbErrorIndexOutOfBounds;
@@ -279,7 +279,7 @@ DBError dbRemoveUnordered(
 
 DBError dbResetIterator(DynamicBuf *db)
 {
-    if (!db) return dbErrorNullBufferObject;
+    if (!db) return dbErrorNullParentObject;
     db->iterator = 0;
     return dbErrorOk;
 }
